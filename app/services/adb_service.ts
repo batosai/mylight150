@@ -12,6 +12,10 @@ export interface AdbTargetOptions {
   serial?: string
 }
 
+export interface AdbLaunchAppOptions extends AdbTargetOptions {
+  activity?: string
+}
+
 type AdbCommandOptions = Pick<ExecaOptions, 'encoding' | 'stripFinalNewline'>
 
 export default class AdbService {
@@ -85,6 +89,29 @@ export default class AdbService {
     await this.runKeyEventCommand(options, 'KEYCODE_MENU')
   }
 
+  async launchApp(packageName: string, options: AdbLaunchAppOptions = {}) {
+    if (options.activity) {
+      await this.runShellCommand(options, [
+        'am',
+        'start',
+        '-n',
+        `${packageName}/${options.activity}`,
+      ])
+      return
+    }
+
+    await this.execute('adb', [
+      ...this.targetArgs(options),
+      'shell',
+      'monkey',
+      '-p',
+      packageName,
+      '-c',
+      'android.intent.category.LAUNCHER',
+      '1',
+    ])
+  }
+
   protected execute(
     command: string,
     args: readonly string[],
@@ -114,6 +141,10 @@ export default class AdbService {
       'keyevent',
       keyEvent,
     ])
+  }
+
+  private runShellCommand(options: AdbTargetOptions, args: readonly string[]) {
+    return this.execute('adb', [...this.targetArgs(options), 'shell', ...args])
   }
 
   private targetArgs({ serial }: AdbTargetOptions) {
