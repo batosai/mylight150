@@ -51,6 +51,7 @@
   },
   "dependencies": {
     "@adonisjs/core": "^7.3.2",
+    "@adonisjs/redis": "^10.0.0",
     "reflect-metadata": "^0.2.2"
   },
   "bundledDependencies": {
@@ -66,5 +67,9 @@
   "eslintConfig": {
     "extends": "@adonisjs/eslint-config/app"
   },
-  "prettier": "@adonisjs/prettier-config"
+  "prettier": "@adonisjs/prettier-config",
+  "bundleDependencies": [
+    "@adonisjs/core",
+    "reflect-metadata"
+  ]
 }
