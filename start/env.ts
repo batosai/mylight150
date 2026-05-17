@@ -21,5 +21,12 @@ export default await Env.create(new URL('../', import.meta.url), {
 
   REDIS_HOST: Env.schema.string({ format: 'host' }),
   REDIS_PORT: Env.schema.number(),
-  REDIS_PASSWORD: Env.schema.secret.optional()
+  REDIS_PASSWORD: Env.schema.secret.optional(),
+
+  /*
+  |----------------------------------------------------------
+  | Variables for configuring @adonisjs/queue
+  |----------------------------------------------------------
+  */
+  QUEUE_DRIVER: Env.schema.enum(['redis', 'database', 'sync'] as const),
 })
