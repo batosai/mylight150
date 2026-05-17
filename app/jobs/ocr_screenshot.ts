@@ -1,5 +1,7 @@
+import app from '@adonisjs/core/services/app'
 import { Job } from '@adonisjs/queue'
 import type { JobOptions } from '@adonisjs/queue/types'
+import redis from '@adonisjs/redis/services/main'
 import sharp from 'sharp'
 import { createWorker } from 'tesseract.js'
 
@@ -14,19 +16,25 @@ export default class OcrScreenshot extends Job<OcrScreenshotPayload> {
   }
 
   async execute() {
-    await sharp('screen.png')
+    const redisMain = redis.connection('main')
+    const screenshotPath = app.tmpPath('screen.png')
+    const processedPath = app.tmpPath('processed.png')
+
+    await sharp(screenshotPath)
       .grayscale()
       .normalize()
       .threshold(150)
       .extract({ left: 100, top: 200, width: 100, height: 100 })
-      .toFile('processed.png')
+      .toFile(processedPath)
 
     const worker = await createWorker('fra')
     const {
       data: { text },
-    } = await worker.recognize('processed.png')
+    } = await worker.recognize(processedPath)
 
     console.log(text)
+
+    await redisMain.set('mylight150_capacity', text)
   }
 
   async failed(error: Error) {
