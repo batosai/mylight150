@@ -8,7 +8,6 @@
     "start": "node bin/server.js",
     "build": "node ace build",
     "dev": "node ace serve --hmr",
-    "test": "node ace test",
     "lint": "eslint .",
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit"
@@ -38,9 +37,6 @@
     "@adonisjs/eslint-config": "^3.0.0",
     "@adonisjs/prettier-config": "^1.4.5",
     "@adonisjs/tsconfig": "^2.0.0",
-    "@japa/assert": "^4.2.0",
-    "@japa/plugin-adonisjs": "^5.2.0",
-    "@japa/runner": "^5.3.0",
     "@poppinss/ts-exec": "^1.4.4",
     "@types/node": "^25.8.0",
     "eslint": "^10.4.0",
@@ -53,6 +49,7 @@
     "@adonisjs/core": "^7.3.2",
     "@adonisjs/queue": "^0.6.1",
     "@adonisjs/redis": "^10.0.0",
+    "execa": "^9.6.1",
     "reflect-metadata": "^0.2.2",
     "sharp": "^0.34.5",
     "tesseract.js": "^7.0.0"
