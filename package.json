@@ -55,10 +55,10 @@
     "@adonisjs/redis": "^10.0.0",
     "reflect-metadata": "^0.2.2"
   },
-  "bundledDependencies": {
-    "@adonisjs/core": "^7.3.2",
-    "reflect-metadata": "^0.2.2"
-  },
+  "bundleDependencies": [
+    "@adonisjs/core",
+    "reflect-metadata"
+  ],
   "hotHook": {
     "boundaries": [
       "./app/controllers/**/*.ts",
@@ -68,9 +68,5 @@
   "eslintConfig": {
     "extends": "@adonisjs/eslint-config/app"
   },
-  "prettier": "@adonisjs/prettier-config",
-  "bundleDependencies": [
-    "@adonisjs/core",
-    "reflect-metadata"
-  ]
+  "prettier": "@adonisjs/prettier-config"
 }
