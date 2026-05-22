@@ -1,28 +1,27 @@
 const path = require('path')
-const root = path.resolve(__dirname, '../', 'current')
+const root = path.resolve('../../', 'current')
 
 module.exports = {
   apps: [
     {
       name: 'api',
       exec_mode: 'cluster',
-      instances: 'max',
+      instances: '2',
       autorestart: true,
       watch: false,
       cwd: root,
-      script: 'npm',
-      args: 'run start',
-      max_memory_restart: '128M',
+      script: 'bin/server.js',
+      max_memory_restart: '180M',
     },
     {
       name: 'worker',
       exec_mode: 'cluster',
-      instances: '3',
+      instances: '2',
       autorestart: true,
       watch: false,
       cwd: root,
-      script: 'node',
-      args: 'ace queue:work',
+      script: 'ace.js',
+      args: 'queue:work',
       max_memory_restart: '256M',
     },
   ],
