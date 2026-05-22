@@ -26,4 +26,5 @@ export default await Env.create(new URL('../', import.meta.url), {
   QUEUE_DRIVER: Env.schema.enum(['redis', 'database', 'sync'] as const),
 
   ADB_APP_PACKAGE_NAME: Env.schema.string(),
+  ADB_DEVICE: Env.schema.string(),
 })
