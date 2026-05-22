@@ -1,16 +1,7 @@
 import type { HttpContext } from '@adonisjs/core/http'
-import redis from '@adonisjs/redis/services/main'
+import { createDashboardAdapter } from '#services/queue_dashboard/factory'
 
 const QUEUE = 'default'
-const DATA_KEY = `jobs::${QUEUE}::data`
-const PENDING_KEY = `jobs::${QUEUE}::pending`
-const DELAYED_KEY = `jobs::${QUEUE}::delayed`
-const ACTIVE_KEY = `jobs::${QUEUE}::active`
-const COMPLETED_KEY = `jobs::${QUEUE}::completed`
-const COMPLETED_INDEX_KEY = `jobs::${QUEUE}::completed::index`
-const FAILED_KEY = `jobs::${QUEUE}::failed`
-const FAILED_INDEX_KEY = `jobs::${QUEUE}::failed::index`
-
 const PER_PAGE = 25
 
 export default class QueueDashboardController {
@@ -19,132 +10,32 @@ export default class QueueDashboardController {
   }
 
   async stats({ response }: HttpContext) {
-    const conn = redis.connection('main')
-    const [pending, delayed, active, completed, failed] = await Promise.all([
-      conn.zcard(PENDING_KEY),
-      conn.zcard(DELAYED_KEY),
-      conn.hlen(ACTIVE_KEY),
-      conn.zcard(COMPLETED_INDEX_KEY),
-      conn.zcard(FAILED_INDEX_KEY),
-    ])
-    return response.json({ pending, delayed, active, completed, failed })
+    const adapter = await createDashboardAdapter()
+    const stats = await adapter.stats(QUEUE)
+    return response.json(stats)
   }
 
   async jobs({ request, response }: HttpContext) {
+    const adapter = await createDashboardAdapter()
     const status = request.input('status', 'pending') as string
     const page = Math.max(1, Number.parseInt(request.input('page', '1')))
-    const offset = (page - 1) * PER_PAGE
-
-    const conn = redis.connection('main')
-    let jobIds: string[] = []
-    let total = 0
-
-    if (status === 'pending') {
-      total = await conn.zcard(PENDING_KEY)
-      jobIds = await conn.zrange(PENDING_KEY, offset, offset + PER_PAGE - 1)
-    } else if (status === 'delayed') {
-      total = await conn.zcard(DELAYED_KEY)
-      jobIds = await conn.zrange(DELAYED_KEY, offset, offset + PER_PAGE - 1)
-    } else if (status === 'active') {
-      const all = await conn.hkeys(ACTIVE_KEY)
-      total = all.length
-      jobIds = all.slice(offset, offset + PER_PAGE)
-    } else if (status === 'completed') {
-      total = await conn.zcard(COMPLETED_INDEX_KEY)
-      jobIds = await conn.zrevrange(COMPLETED_INDEX_KEY, offset, offset + PER_PAGE - 1)
-    } else if (status === 'failed') {
-      total = await conn.zcard(FAILED_INDEX_KEY)
-      jobIds = await conn.zrevrange(FAILED_INDEX_KEY, offset, offset + PER_PAGE - 1)
-    }
-
-    if (jobIds.length === 0) {
-      return response.json({ jobs: [], total, page, perPage: PER_PAGE })
-    }
-
-    const pipeline = conn.pipeline()
-    for (const id of jobIds) {
-      pipeline.hget(DATA_KEY, id)
-    }
-
-    const metaPipeline = conn.pipeline()
-    if (status === 'completed') {
-      for (const id of jobIds) metaPipeline.hget(COMPLETED_KEY, id)
-    } else if (status === 'failed') {
-      for (const id of jobIds) metaPipeline.hget(FAILED_KEY, id)
-    } else if (status === 'active') {
-      for (const id of jobIds) metaPipeline.hget(ACTIVE_KEY, id)
-    }
-
-    const [dataResults, metaResults] = await Promise.all([pipeline.exec(), metaPipeline.exec()])
-
-    const jobs = jobIds.map((id, i) => {
-      const [, rawData] = dataResults![i] as [Error | null, string | null]
-      if (!rawData) return null
-
-      const job = JSON.parse(rawData)
-      let meta: Record<string, unknown> = {}
-
-      if (metaResults && metaResults[i]) {
-        const [, rawMeta] = metaResults[i] as [Error | null, string | null]
-        if (rawMeta) meta = JSON.parse(rawMeta)
-      }
-
-      return { id, status, ...job, ...meta }
-    })
-
-    return response.json({
-      jobs: jobs.filter(Boolean),
-      total,
-      page,
-      perPage: PER_PAGE,
-    })
+    const { jobs, total } = await adapter.listJobs(QUEUE, status, page, PER_PAGE)
+    return response.json({ jobs, total, page, perPage: PER_PAGE })
   }
 
   async retryJob({ params, response }: HttpContext) {
-    const id = params.id as string
-    const conn = redis.connection('main')
-
-    const [rawData, isInFailed] = await Promise.all([
-      conn.hget(DATA_KEY, id),
-      conn.hexists(FAILED_KEY, id),
-    ])
-
-    if (!rawData || !isInFailed) {
-      return response.status(404).json({ error: 'Job not found in failed queue' })
+    const adapter = await createDashboardAdapter()
+    try {
+      await adapter.retryJob(params.id as string, QUEUE)
+      return response.json({ success: true })
+    } catch (e) {
+      return response.status(404).json({ error: (e as Error).message })
     }
-
-    const job = JSON.parse(rawData)
-    job.attempts = 0
-    const priority = job.priority ?? 5
-    const score = priority * 10_000_000_000_000 + Date.now()
-
-    await conn
-      .multi()
-      .hdel(FAILED_KEY, id)
-      .zrem(FAILED_INDEX_KEY, id)
-      .hset(DATA_KEY, id, JSON.stringify(job))
-      .zadd(PENDING_KEY, score, id)
-      .exec()
-
-    return response.json({ success: true })
   }
 
   async deleteJob({ params, response }: HttpContext) {
-    const id = params.id as string
-    const conn = redis.connection('main')
-
-    await conn
-      .multi()
-      .hdel(FAILED_KEY, id)
-      .zrem(FAILED_INDEX_KEY, id)
-      .hdel(COMPLETED_KEY, id)
-      .zrem(COMPLETED_INDEX_KEY, id)
-      .zrem(PENDING_KEY, id)
-      .zrem(DELAYED_KEY, id)
-      .hdel(ACTIVE_KEY, id)
-      .hdel(DATA_KEY, id)
-      .exec()
-
+    const adapter = await createDashboardAdapter()
+    await adapter.deleteJob(params.id as string, QUEUE)
     return response.json({ success: true })
   }
 }
