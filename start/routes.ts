@@ -12,10 +12,10 @@ import redis from '@adonisjs/redis/services/main'
 
 router.get('/api/battery', async () => {
   const redisMain = redis.connection('main')
-  const capacity = (await redisMain.get('mylight150_capacity')) ?? 0
+  const capacity = (await redisMain.get('mylight150_capacity')) ?? '0'
 
   return {
-    capacity,
+    capacity: Number.parseInt(capacity, 10),
   }
 })
 
