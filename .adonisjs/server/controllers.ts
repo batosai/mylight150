@@ -3,4 +3,6 @@
  * DO NOT EDIT manually
  */
 
-export const controllers = {}
+export const controllers = {
+  QueueDashboard: () => import('#controllers/queue_dashboard_controller'),
+}

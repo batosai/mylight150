@@ -18,3 +18,11 @@ router.get('/api/battery', async () => {
     capacity,
   }
 })
+
+const QueueDashboardController = () => import('#controllers/queue_dashboard_controller')
+
+router.get('/queue-dashboard', [QueueDashboardController, 'index'])
+router.get('/queue-dashboard/api/stats', [QueueDashboardController, 'stats'])
+router.get('/queue-dashboard/api/jobs', [QueueDashboardController, 'jobs'])
+router.post('/queue-dashboard/api/jobs/:id/retry', [QueueDashboardController, 'retryJob'])
+router.delete('/queue-dashboard/api/jobs/:id', [QueueDashboardController, 'deleteJob'])
