@@ -5,9 +5,7 @@ import redis from '@adonisjs/redis/services/main'
 import sharp from 'sharp'
 import { createWorker } from 'tesseract.js'
 
-interface OcrScreenshotPayload {
-  // Define your payload type here
-}
+interface OcrScreenshotPayload {}
 
 export default class OcrScreenshot extends Job<OcrScreenshotPayload> {
   static options: JobOptions = {
@@ -24,7 +22,7 @@ export default class OcrScreenshot extends Job<OcrScreenshotPayload> {
       .grayscale()
       .normalize()
       .threshold(150)
-      .extract({ left: 100, top: 200, width: 100, height: 100 })
+      .extract({ left: 860, top: 1495, width: 120, height: 45 })
       .toFile(processedPath)
 
     const worker = await createWorker('fra')
@@ -32,9 +30,9 @@ export default class OcrScreenshot extends Job<OcrScreenshotPayload> {
       data: { text },
     } = await worker.recognize(processedPath)
 
-    console.log(text)
+    console.log(text.replace('%', '').replace('\n', ''))
 
-    await redisMain.set('mylight150_capacity', text)
+    await redisMain.set('mylight150_capacity', text.replace('%', '').replace('\n', ''))
   }
 
   async failed(error: Error) {
