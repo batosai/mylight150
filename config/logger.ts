@@ -49,11 +49,24 @@ const loggerConfig = defineConfig({
        * Transport configuration defines where and how logs are sent.
        */
       transport: {
-        /**
-         * Targets define the output destinations for logs.
-         * destination: 1 means stdout (console output).
-         */
-        targets: [targets.file({ destination: 1 })],
+        targets: targets()
+          .pushIf(!app.inProduction, targets.pretty())
+          .pushIf(
+            !app.inProduction,
+            targets.file({ destination: app.makePath(`log/${env.get('NODE_ENV')}.log`) })
+          )
+          .pushIf(app.inProduction, {
+            target: 'pino-roll',
+            level: 'trace',
+            options: {
+              file: app.makePath(`log/${env.get('NODE_ENV')}`),
+              frequency: 'daily',
+              size: '10M',
+              dateFormat: 'yyyy-MM-dd',
+              mkdir: true,
+            },
+          })
+          .toArray(),
       },
     },
   },
