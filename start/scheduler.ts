@@ -16,6 +16,6 @@
 |
 */
 
-// import CreateScreenshot from '#jobs/create_screenshot'
+import CreateScreenshot from '#jobs/create_screenshot'
 
-// await CreateScreenshot.schedule({}).every('5m')
+await CreateScreenshot.schedule({}).every('5m')
