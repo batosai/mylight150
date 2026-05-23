@@ -89,6 +89,10 @@ export default class AdbService {
     await this.runKeyEventCommand(options, 'KEYCODE_MENU')
   }
 
+  async lock(options: AdbTargetOptions = {}) {
+    await this.runKeyEventCommand(options, 'KEYCODE_POWER')
+  }
+
   async launchApp(packageName: string, options: AdbLaunchAppOptions = {}) {
     if (options.activity) {
       await this.runShellCommand(options, [
