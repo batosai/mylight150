@@ -2,6 +2,7 @@ import {
   type TaskContext,
   defineConfig,
   upload,
+  download,
   desc,
   task,
   get,
@@ -44,6 +45,22 @@ task('deploy:install', () => {
 
 before('deploy:lock', 'deploy:build')
 after('deploy:shared', 'deploy:install')
+
+// ---
+
+task('adb:screenshot', () => {
+  cd('{{release_path}}')
+  run('node ace adb:screenshot')
+})
+
+task('screenshot:ocr', () => {
+  cd('{{release_path}}')
+  run('node ace screenshot:ocr')
+})
+
+task('sync:tmp', () => {
+  download('{{release_path}}/tmp/.', 'tmp')
+})
 
 export default defineConfig({
   hosts: [
