@@ -1,6 +1,8 @@
-import app from '@adonisjs/core/services/app'
-import { Job } from '@adonisjs/queue'
 import type { JobOptions } from '@adonisjs/queue/types'
+
+import app from '@adonisjs/core/services/app'
+import logger from '@adonisjs/core/services/logger'
+import { Job } from '@adonisjs/queue'
 import redis from '@adonisjs/redis/services/main'
 import sharp from 'sharp'
 import { createWorker } from 'tesseract.js'
@@ -30,12 +32,12 @@ export default class OcrScreenshot extends Job<OcrScreenshotPayload> {
       data: { text },
     } = await worker.recognize(processedPath)
 
-    console.log(text.replace('%', '').replace('\n', ''))
+    logger.info(text.replace('%', '').replace('\n', ''))
 
     await redisMain.set('mylight150_capacity', text.replace('%', '').replace('\n', ''))
   }
 
   async failed(error: Error) {
-    console.error('OcrScreenshot failed:', error.message)
+    logger.error('OcrScreenshot failed:', error.message)
   }
 }
