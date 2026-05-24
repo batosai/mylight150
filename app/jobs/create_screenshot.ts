@@ -16,7 +16,7 @@ const REFRESH_SWIPE_START_Y = 600
 const REFRESH_SWIPE_END_X = 540
 const REFRESH_SWIPE_END_Y = 1800
 const REFRESH_SWIPE_DURATION_MS = 350
-const RELOAD_WAIT_MS = 2000
+const RELOAD_WAIT_MS = 3000
 
 @inject()
 export default class CreateScreenshot extends Job<CreateScreenshotPayload> {
