@@ -17,7 +17,7 @@ import {
 import '@catapultjs/deploy/recipes/pm2'
 
 set('writable_dirs', ['storage', 'logs', 'tmp'])
-set('shared_dirs', ['storage', 'logs'])
+set('shared_dirs', ['storage', 'logs', 'tmp'])
 set('shared_files', ['.env'])
 set('adonisjs_path', './')
 
