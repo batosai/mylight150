@@ -48,6 +48,11 @@ after('deploy:shared', 'deploy:install')
 
 // ---
 
+task('queue:scheduler:list', () => {
+  cd('{{release_path}}')
+  run('node ace queue:scheduler:list')
+})
+
 task('adb:screenshot', () => {
   cd('{{release_path}}')
   run('node ace adb:screenshot')
