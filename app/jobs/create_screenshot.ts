@@ -38,6 +38,7 @@ export default class CreateScreenshot extends Job<CreateScreenshotPayload> {
     await this.adb.wake({ serial })
     await this.adb.unlock({ serial })
     await this.adb.launchApp(packageName, { serial, activity })
+    await sleep(RELOAD_WAIT_MS)
     await this.adb.swipe(
       REFRESH_SWIPE_START_X,
       REFRESH_SWIPE_START_Y,
