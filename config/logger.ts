@@ -59,7 +59,7 @@ const loggerConfig = defineConfig({
             target: 'pino-roll',
             level: 'trace',
             options: {
-              file: app.makePath(`log/${env.get('NODE_ENV')}`),
+              file: app.makePath(`logs/${env.get('NODE_ENV')}`),
               frequency: 'daily',
               size: '10M',
               dateFormat: 'yyyy-MM-dd',
