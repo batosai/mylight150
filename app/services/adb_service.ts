@@ -116,6 +116,10 @@ export default class AdbService {
     ])
   }
 
+  async forceStopApp(packageName: string, options: AdbTargetOptions = {}) {
+    await this.runShellCommand(options, ['am', 'force-stop', packageName])
+  }
+
   protected execute(
     command: string,
     args: readonly string[],

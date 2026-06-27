@@ -49,6 +49,7 @@ export default class CreateScreenshot extends Job<CreateScreenshotPayload> {
     )
     await sleep(RELOAD_WAIT_MS)
     await this.adb.screencap(screenshotPath, { serial })
+    await this.adb.forceStopApp(packageName)
     await this.adb.lock({ serial })
 
     await OCRScreenshot.dispatch({})
