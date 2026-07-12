@@ -32,9 +32,11 @@ export default class OcrScreenshot extends Job<OcrScreenshotPayload> {
       data: { text },
     } = await worker.recognize(processedPath)
 
-    logger.info(text.replace('%', '').replace('\n', ''))
+    const value = text.replace('%', '').replace('\n', '').replace('/', '').replace('\\', '').trim()
 
-    await redisMain.set('mylight150_capacity', text.replace('%', '').replace('\n', ''))
+    logger.info(value)
+
+    await redisMain.set('mylight150_capacity', value)
   }
 
   async failed(error: Error) {
