@@ -16,6 +16,9 @@ import {
 } from '@catapultjs/deploy'
 import '@catapultjs/deploy/recipes/pm2'
 
+// TODO migrate =>
+// https://github.com/catapultjs/deploy/blob/main/recipes/adonisjs_local.ts
+
 set('writable_dirs', ['storage', 'logs', 'tmp'])
 set('shared_dirs', ['storage', 'logs', 'tmp'])
 set('shared_files', ['.env'])

@@ -6,11 +6,11 @@ import OcrScreenshot from '#jobs/ocr_screenshot'
 export default class Ocr extends BaseCommand {
   static commandName = 'screenshot:ocr'
 
-  static options: CommandOptions = {}
+  static options: CommandOptions = {
+    startApp: true,
+  }
 
   async run() {
-    const queue = await this.app.container.make('queue.manager')
-    await queue.loadJobs()
     await OcrScreenshot.dispatch({})
   }
 }

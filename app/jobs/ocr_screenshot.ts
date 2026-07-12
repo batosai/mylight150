@@ -24,7 +24,7 @@ export default class OcrScreenshot extends Job<OcrScreenshotPayload> {
       .grayscale()
       .normalize()
       .threshold(150)
-      .extract({ left: 860, top: 1495, width: 120, height: 45 })
+      .extract({ left: 800, top: 1495, width: 160, height: 45 })
       .toFile(processedPath)
 
     const worker = await createWorker('fra')
