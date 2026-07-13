@@ -32,7 +32,13 @@ export default class OcrScreenshot extends Job<OcrScreenshotPayload> {
       data: { text },
     } = await worker.recognize(processedPath)
 
-    const value = text.replace('%', '').replace('\n', '').replace('/', '').replace('\\', '').trim()
+    const value =
+      text
+        .match(/\d+/g)
+        ?.map((candidate) => Number.parseInt(candidate, 10))
+        .filter((candidate) => candidate >= 0 && candidate <= 100)
+        .at(-1)
+        ?.toString() ?? ''
 
     logger.info(value)
 
