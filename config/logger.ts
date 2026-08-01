@@ -1,6 +1,7 @@
 import env from '#start/env'
 import app from '@adonisjs/core/services/app'
 import { defineConfig, syncDestination, targets } from '@adonisjs/core/logger'
+import { linearBackoff } from '@adonisjs/queue'
 
 /**
  * Logger configuration.
@@ -62,6 +63,7 @@ const loggerConfig = defineConfig({
               file: app.makePath(`logs/${env.get('NODE_ENV')}`),
               frequency: 'daily',
               size: '10M',
+              limit: 10,
               dateFormat: 'yyyy-MM-dd',
               mkdir: true,
             },
