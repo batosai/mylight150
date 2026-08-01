@@ -62,7 +62,10 @@ const loggerConfig = defineConfig({
               file: app.makePath(`logs/${env.get('NODE_ENV')}`),
               frequency: 'daily',
               size: '10M',
-              limit: 10,
+              limit: {
+                count: 10,
+                removeOtherLogFiles: true,
+              },
               dateFormat: 'yyyy-MM-dd',
               mkdir: true,
             },
