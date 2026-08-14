@@ -9,6 +9,7 @@
 
 import router from '@adonisjs/core/services/router'
 import redis from '@adonisjs/redis/services/main'
+import CreateScreenshot from '#jobs/create_screenshot'
 
 router.get('/api/battery', async () => {
   const redisMain = redis.connection('main')
@@ -17,6 +18,12 @@ router.get('/api/battery', async () => {
   return {
     capacity: Number.parseInt(capacity, 10),
   }
+})
+
+router.post('/api/battery/refresh', async ({ response }) => {
+  await CreateScreenshot.dispatch({})
+
+  return response.status(202).json({ queued: true })
 })
 
 const QueueDashboardController = () => import('#controllers/queue_dashboard_controller')
