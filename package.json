@@ -49,7 +49,7 @@
     "typescript": "~5.9.3"
   },
   "dependencies": {
-    "@adonisjs/core": "^7.3.5",
+    "@adonisjs/core": "^7.4.0",
     "@adonisjs/queue": "^0.6.2",
     "@adonisjs/redis": "^10.0.0",
     "execa": "^9.6.1",
