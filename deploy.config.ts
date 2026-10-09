@@ -2,7 +2,6 @@ import {
   type TaskContext,
   defineConfig,
   upload,
-  download,
   desc,
   task,
   get,
@@ -10,6 +9,7 @@ import {
   local,
   cd,
   run,
+  bin,
   pmInstallProd,
   before,
   after,
@@ -50,24 +50,28 @@ after('deploy:shared', 'deploy:install')
 
 // ---
 
+desc('Lists the registered queue schedules')
 task('queue:scheduler:list', () => {
-  cd('{{release_path}}')
-  run('node ace queue:scheduler:list')
-})
-
-task('adb:screenshot', () => {
-  cd('{{release_path}}')
-  run('node ace adb:screenshot')
+  cd('{{current_path}}')
+  run(`${bin('node')} ace queue:scheduler:list`)
 })
 
 desc('Queues a battery reading from the Android UI')
 task('battery:refresh', () => {
-  cd('{{release_path}}')
-  run('node ace battery:refresh')
+  cd('{{current_path}}')
+  run(`${bin('node')} ace battery:refresh`)
 })
 
-task('sync:tmp', () => {
-  download('{{release_path}}/tmp/.', 'tmp')
+desc('Checks the mylight Android session')
+task('mylight:status', () => {
+  cd('{{current_path}}')
+  run(`${bin('node')} ace mylight:status`)
+})
+
+desc('Reconnects mylight if the Android session is disconnected')
+task('mylight:reconnect', () => {
+  cd('{{current_path}}')
+  run(`${bin('node')} ace mylight:reconnect`)
 })
 
 export default defineConfig({
