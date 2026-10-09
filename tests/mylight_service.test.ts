@@ -18,6 +18,48 @@ const { default: redis } = await import('@adonisjs/redis/services/main')
 const { default: MylightService, MylightSession } =
   await import('../app/services/mylight_service.js')
 after(() => app.terminate())
+const { default: RefreshBattery } = await import('../app/jobs/refresh_battery.js')
+const { Schedule } = await import('@adonisjs/queue')
+
+test('scheduler replaces only the old battery schedule', async () => {
+  const events: string[] = []
+  mock.method(RefreshBattery, 'schedule', () => ({
+    id(value: string) {
+      events.push(value)
+      return this
+    },
+    async every(value: string) {
+      events.push(value)
+      return { scheduleId: 'mylight-battery-refresh' }
+    },
+  }))
+  mock.method(Schedule, 'list', async () => [
+    {
+      name: 'CreateScreenshot',
+      async delete() {
+        events.push('delete-old')
+      },
+    },
+    {
+      name: 'RefreshBattery',
+      async delete() {
+        throw new Error('Must keep new schedule')
+      },
+    },
+    {
+      name: 'OtherJob',
+      async delete() {
+        throw new Error('Must keep unrelated schedule')
+      },
+    },
+  ])
+  try {
+    await import('../start/scheduler.js')
+    assert.deepEqual(events, ['mylight-battery-refresh', '5m', 'delete-old'])
+  } finally {
+    mock.restoreAll()
+  }
+})
 
 class FakeAdb extends AdbService {
   events: string[] = []
@@ -39,6 +81,9 @@ class FakeAdb extends AdbService {
   }
   async lock() {
     this.events.push('sleep')
+  }
+  async swipe() {
+    this.events.push('refresh')
   }
   async dumpUi() {
     return '<hierarchy><node package="test-app" content-desc="Batterie virtuelle&#10;40%" /></hierarchy>'
@@ -172,4 +217,39 @@ test('credentials are never included in Android input errors', async () => {
     new FailingAdb().inputText('contains spaces'),
     /Unsupported credential format/
   )
+})
+
+test('scheduled job reads UI directly and preserves Redis when the percentage is missing', async () => {
+  class BatteryAdb extends FakeAdb {
+    label = 'Batterie virtuelle&#10;0%'
+    async dumpUi() {
+      return `<hierarchy><node package="test-app" content-desc="${this.label}" /></hierarchy>`
+    }
+    async screencap(): Promise<string> {
+      throw new Error('Battery reading must not take screenshots')
+    }
+  }
+  const writes: string[][] = []
+  mock.method(env, 'get', (key: string) => (key === 'ADB_DEVICE' ? 'test-phone' : 'test-app'))
+  mock.method(redis, 'connection', () => ({
+    async set(...args: string[]) {
+      if (args[0] === 'mylight150_capacity') writes.push(args)
+      return 'OK'
+    },
+    async eval() {
+      return 1
+    },
+  }))
+  try {
+    const adb = new BatteryAdb()
+    const job = new RefreshBattery(adb, new MylightService(adb))
+    await job.execute()
+    assert.deepEqual(writes, [['mylight150_capacity', '0']])
+    adb.label = 'Batterie virtuelle&#10;Énergie stockée: 40 / 100 kWh'
+    await assert.rejects(job.execute(), /previous value preserved/)
+    assert.equal(writes.length, 1)
+    assert.equal(adb.events.at(-1), 'sleep')
+  } finally {
+    mock.restoreAll()
+  }
 })

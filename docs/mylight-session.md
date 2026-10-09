@@ -3,6 +3,7 @@
 ```sh
 node ace mylight:status
 node ace mylight:reconnect
+node ace battery:refresh
 ```
 
 `status` ouvre l'application et affiche `connected`, `disconnected`, `unknown`
@@ -21,17 +22,25 @@ Les variables restent facultatives au démarrage. Elles sont nécessaires pour
 reconnecter une session. La saisie Android accepte les caractères ASCII sans
 espaces et ne prend pas en charge la séquence `%s`.
 
-Le job de capture, programmé toutes les cinq minutes, vérifie la session et tente
+Le job de lecture, programmé toutes les cinq minutes, vérifie la session et tente
 une reconnexion avant de rafraîchir l'écran. Un verrou Redis partagé par les
 commandes et le job empêche les manipulations simultanées du téléphone.
 Une tentative de connexion déclenche un délai de quinze minutes avant la suivante.
 Un écran inconnu, une erreur ou une validation supplémentaire demande une
 intervention manuelle ; aucun nouveau pourcentage n'est enregistré dans ce cas.
 
-Chaque capture possède son propre fichier pour éviter les collisions entre jobs.
-Les fichiers sont supprimés après un traitement OCR réussi et conservés en cas
-d'échec pour permettre les relances. Une lecture OCR invalide conserve la dernière
-valeur de batterie enregistrée.
+UIAutomator lit directement le pourcentage dans le texte accessible du bloc
+« Batterie virtuelle ». Aucune capture ni OCR n'est nécessaire. Seul un pourcentage
+entier de 0 à 100 est accepté ; une valeur absente, invalide ou ambiguë conserve
+la dernière valeur de batterie enregistrée. Le job s'appelle `RefreshBattery`.
+Au démarrage du serveur, le schedule `mylight-battery-refresh` est enregistré
+et l'ancien schedule `CreateScreenshot` est supprimé pour éviter les doublons.
+
+`battery:refresh` et `POST /api/battery/refresh` déclenchent cette même lecture.
+`adb:screenshot` reste disponible pour une capture de diagnostic dans `tmp/screen.png`.
+La commande `screenshot:ocr` est supprimée. Avant de déployer cette version,
+laisser finir les anciens jobs `CreateScreenshot` et `OCRScreenshot` en attente
+avec l'ancien worker.
 
 Le parcours a été vérifié sur le Pixel 6a avec mylight 1.30.1 : écran
 « Accéder à mon compte », navigateur Jelly, authentification sur

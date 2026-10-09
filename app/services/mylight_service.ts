@@ -4,7 +4,13 @@ import { inject } from '@adonisjs/core'
 import redis from '@adonisjs/redis/services/main'
 import env from '#start/env'
 import AdbService from '#services/adb_service'
-import { nodeCenter, parseUi, screenState, type UiNode } from '#services/mylight_screen'
+import {
+  batteryCapacity,
+  nodeCenter,
+  parseUi,
+  screenState,
+  type UiNode,
+} from '#services/mylight_screen'
 
 @inject()
 export default class MylightService {
@@ -70,6 +76,10 @@ export class MylightSession {
       await sleep(1000)
     }
     return 'unknown' as const
+  }
+
+  async readBatteryCapacity() {
+    return batteryCapacity(await this.nodes(), this.packageName)
   }
 
   private async tap(node: UiNode | undefined) {

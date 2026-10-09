@@ -16,6 +16,12 @@
 |
 */
 
-import CreateScreenshot from '#jobs/create_screenshot'
+import { Schedule } from '@adonisjs/queue'
+import RefreshBattery from '#jobs/refresh_battery'
 
-await CreateScreenshot.schedule({}).every('5m')
+await RefreshBattery.schedule({}).id('mylight-battery-refresh').every('5m')
+
+// Remove the persisted schedule from before the battery job was renamed.
+for (const schedule of await Schedule.list()) {
+  if (schedule.name === 'CreateScreenshot') await schedule.delete()
+}

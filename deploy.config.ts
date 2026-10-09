@@ -60,9 +60,10 @@ task('adb:screenshot', () => {
   run('node ace adb:screenshot')
 })
 
-task('screenshot:ocr', () => {
+desc('Queues a battery reading from the Android UI')
+task('battery:refresh', () => {
   cd('{{release_path}}')
-  run('node ace screenshot:ocr')
+  run('node ace battery:refresh')
 })
 
 task('sync:tmp', () => {

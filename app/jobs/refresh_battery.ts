@@ -1,18 +1,14 @@
 import type { JobOptions } from '@adonisjs/queue/types'
 import { setTimeout as sleep } from 'node:timers/promises'
-import { randomUUID } from 'node:crypto'
-import { copyFile } from 'node:fs/promises'
-
-import app from '@adonisjs/core/services/app'
 import logger from '@adonisjs/core/services/logger'
+import redis from '@adonisjs/redis/services/main'
 import { Job } from '@adonisjs/queue'
 import { inject } from '@adonisjs/core'
-import OCRScreenshot from '#jobs/ocr_screenshot'
 import AdbService from '#services/adb_service'
 import MylightService from '#services/mylight_service'
 import env from '#start/env'
 
-interface CreateScreenshotPayload {}
+interface RefreshBatteryPayload {}
 
 const REFRESH_SWIPE_START_X = 540
 const REFRESH_SWIPE_START_Y = 600
@@ -22,7 +18,7 @@ const REFRESH_SWIPE_DURATION_MS = 350
 const RELOAD_WAIT_MS = 3000
 
 @inject()
-export default class CreateScreenshot extends Job<CreateScreenshotPayload> {
+export default class RefreshBattery extends Job<RefreshBatteryPayload> {
   static options: JobOptions = {
     queue: 'default',
     maxRetries: 3,
@@ -37,8 +33,6 @@ export default class CreateScreenshot extends Job<CreateScreenshotPayload> {
 
   async execute() {
     const serial = env.get('ADB_DEVICE')
-    const screenshotName = `screen-${randomUUID()}.png`
-    const screenshotPath = app.tmpPath(screenshotName)
     await this.mylight.withSession(async (session) => {
       if (!session) throw new Error('ADB device unavailable')
       await session.ensureConnected()
@@ -51,18 +45,13 @@ export default class CreateScreenshot extends Job<CreateScreenshotPayload> {
         { serial }
       )
       await sleep(RELOAD_WAIT_MS)
-      if ((await session.status()) !== 'connected') {
-        throw new Error('Mylight is not connected after refresh')
-      }
-      await this.adb.screencap(screenshotPath, { serial })
-      // Keep the latest capture available to screenshot:ocr and sync:tmp.
-      await copyFile(screenshotPath, app.tmpPath('screen.png'))
+      const capacity = await session.readBatteryCapacity()
+      await redis.connection('main').set('mylight150_capacity', String(capacity))
+      logger.info({ capacity }, 'Mylight battery capacity updated')
     })
-
-    await OCRScreenshot.dispatch({ screenshotName })
   }
 
   async failed(error: Error) {
-    logger.error('CreateScreenshot failed:', error.message)
+    logger.error('RefreshBattery failed:', error.message)
   }
 }

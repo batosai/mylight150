@@ -9,7 +9,7 @@
 
 import router from '@adonisjs/core/services/router'
 import redis from '@adonisjs/redis/services/main'
-import CreateScreenshot from '#jobs/create_screenshot'
+import RefreshBattery from '#jobs/refresh_battery'
 
 router.get('/api/battery', async () => {
   const redisMain = redis.connection('main')
@@ -21,7 +21,7 @@ router.get('/api/battery', async () => {
 })
 
 router.post('/api/battery/refresh', async ({ response }) => {
-  await CreateScreenshot.dispatch({})
+  await RefreshBattery.dispatch({})
 
   return response.status(202).json({ queued: true })
 })

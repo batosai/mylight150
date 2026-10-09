@@ -48,3 +48,22 @@ export function nodeCenter(node: UiNode) {
   if (right <= left || bottom <= top) throw new Error('Android control is not visible')
   return { x: Math.floor((left + right) / 2), y: Math.floor((top + bottom) / 2) }
 }
+
+export function batteryCapacity(nodes: UiNode[], packageName: string) {
+  if (screenState(nodes, packageName) !== 'connected') {
+    throw new Error('Mylight dashboard is not connected')
+  }
+  const batteries = nodes.filter(
+    (node) =>
+      node.package === packageName && node['content-desc']?.startsWith('Batterie virtuelle\n')
+  )
+  if (batteries.length !== 1) throw new Error('Expected one virtual battery on the dashboard')
+  const percentages = batteries[0]['content-desc']
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.includes('%'))
+  if (percentages.length !== 1 || !/^(?:100|[1-9]?\d)\s*%$/.test(percentages[0])) {
+    throw new Error('No unambiguous battery capacity found; previous value preserved')
+  }
+  return Number.parseInt(percentages[0], 10)
+}

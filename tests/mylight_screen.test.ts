@@ -1,8 +1,41 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { nodeCenter, parseUi, screenState } from '../app/services/mylight_screen.js'
+import {
+  batteryCapacity,
+  nodeCenter,
+  parseUi,
+  screenState,
+} from '../app/services/mylight_screen.js'
 
 const pkg = 'com.mylightsystems.mira'
+test('reads only the virtual battery percentage, including zero and full capacity', () => {
+  for (const capacity of [0, 40, 100]) {
+    const nodes = parseUi(`<hierarchy>
+      <node package="${pkg}" content-desc="Autoconsommation&#10;75%" />
+      <node package="${pkg}" content-desc="Batterie virtuelle&#10;2,59 kW&#10;Énergie stockée: 40 / 100 kWh&#10;${capacity} %" />
+    </hierarchy>`)
+    assert.equal(batteryCapacity(nodes, pkg), capacity)
+  }
+})
+test('rejects missing, invalid and ambiguous capacities', () => {
+  for (const text of ['', '101%', '-1%', '40.5%', '40%\n50%', '40 kWh', 'environ 40%']) {
+    assert.throws(() =>
+      batteryCapacity([{ 'package': pkg, 'content-desc': `Batterie virtuelle\n${text}` }], pkg)
+    )
+  }
+  assert.throws(() =>
+    batteryCapacity([{ 'package': 'other', 'content-desc': 'Batterie virtuelle\n40%' }], pkg)
+  )
+  assert.throws(() =>
+    batteryCapacity(
+      [
+        { 'package': pkg, 'content-desc': 'Batterie virtuelle\n40%' },
+        { 'package': pkg, 'content-desc': 'Batterie virtuelle\n50%' },
+      ],
+      pkg
+    )
+  )
+})
 test('recognizes real dashboard accessibility labels and XML entities', () => {
   const nodes = parseUi(
     `<hierarchy><node package="${pkg}" content-desc="Batterie virtuelle&#10;40%" bounds="[32,1326][1049,1773]" /></hierarchy>`
