@@ -1,4 +1,5 @@
 import type { JobOptions } from '@adonisjs/queue/types'
+import { unlink } from 'node:fs/promises'
 
 import app from '@adonisjs/core/services/app'
 import logger from '@adonisjs/core/services/logger'
@@ -7,7 +8,9 @@ import redis from '@adonisjs/redis/services/main'
 import sharp from 'sharp'
 import { createWorker } from 'tesseract.js'
 
-interface OcrScreenshotPayload {}
+interface OcrScreenshotPayload {
+  screenshotName?: string
+}
 
 export default class OcrScreenshot extends Job<OcrScreenshotPayload> {
   static options: JobOptions = {
@@ -17,8 +20,12 @@ export default class OcrScreenshot extends Job<OcrScreenshotPayload> {
 
   async execute() {
     const redisMain = redis.connection('main')
-    const screenshotPath = app.tmpPath('screen.png')
-    const processedPath = app.tmpPath('processed.png')
+    const screenshotName = this.payload.screenshotName ?? 'screen.png'
+    if (!/^screen(?:-[\da-f-]{36})?\.png$/.test(screenshotName)) {
+      throw new Error('Invalid screenshot filename')
+    }
+    const screenshotPath = app.tmpPath(screenshotName)
+    const processedPath = app.tmpPath(`${screenshotName}.processed.png`)
 
     await sharp(screenshotPath)
       .grayscale()
@@ -28,9 +35,13 @@ export default class OcrScreenshot extends Job<OcrScreenshotPayload> {
       .toFile(processedPath)
 
     const worker = await createWorker('fra')
-    const {
-      data: { text },
-    } = await worker.recognize(processedPath)
+    let text: string
+    try {
+      const result = await worker.recognize(processedPath)
+      text = result.data.text
+    } finally {
+      await worker.terminate()
+    }
 
     const value =
       text
@@ -40,9 +51,15 @@ export default class OcrScreenshot extends Job<OcrScreenshotPayload> {
         .at(-1)
         ?.toString() ?? ''
 
+    if (!value) {
+      throw new Error('No valid battery capacity found; previous value preserved')
+    }
     logger.info(value)
 
     await redisMain.set('mylight150_capacity', value)
+    if (this.payload.screenshotName) {
+      await Promise.allSettled([unlink(screenshotPath), unlink(processedPath)])
+    }
   }
 
   async failed(error: Error) {

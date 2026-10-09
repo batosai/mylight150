@@ -1,5 +1,7 @@
 import type { JobOptions } from '@adonisjs/queue/types'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { randomUUID } from 'node:crypto'
+import { copyFile } from 'node:fs/promises'
 
 import app from '@adonisjs/core/services/app'
 import logger from '@adonisjs/core/services/logger'
@@ -7,6 +9,7 @@ import { Job } from '@adonisjs/queue'
 import { inject } from '@adonisjs/core'
 import OCRScreenshot from '#jobs/ocr_screenshot'
 import AdbService from '#services/adb_service'
+import MylightService from '#services/mylight_service'
 import env from '#start/env'
 
 interface CreateScreenshotPayload {}
@@ -25,34 +28,38 @@ export default class CreateScreenshot extends Job<CreateScreenshotPayload> {
     maxRetries: 3,
   }
 
-  constructor(private adb: AdbService) {
+  constructor(
+    private adb: AdbService,
+    private mylight: MylightService
+  ) {
     super()
   }
 
   async execute() {
     const serial = env.get('ADB_DEVICE')
-    const packageName = env.get('ADB_APP_PACKAGE_NAME')
-    const screenshotPath = app.tmpPath('screen.png')
-    const activity = '.MainActivity'
+    const screenshotName = `screen-${randomUUID()}.png`
+    const screenshotPath = app.tmpPath(screenshotName)
+    await this.mylight.withSession(async (session) => {
+      if (!session) throw new Error('ADB device unavailable')
+      await session.ensureConnected()
+      await this.adb.swipe(
+        REFRESH_SWIPE_START_X,
+        REFRESH_SWIPE_START_Y,
+        REFRESH_SWIPE_END_X,
+        REFRESH_SWIPE_END_Y,
+        REFRESH_SWIPE_DURATION_MS,
+        { serial }
+      )
+      await sleep(RELOAD_WAIT_MS)
+      if ((await session.status()) !== 'connected') {
+        throw new Error('Mylight is not connected after refresh')
+      }
+      await this.adb.screencap(screenshotPath, { serial })
+      // Keep the latest capture available to screenshot:ocr and sync:tmp.
+      await copyFile(screenshotPath, app.tmpPath('screen.png'))
+    })
 
-    await this.adb.wake({ serial })
-    await this.adb.unlock({ serial })
-    await this.adb.launchApp(packageName, { serial, activity })
-    await sleep(RELOAD_WAIT_MS)
-    await this.adb.swipe(
-      REFRESH_SWIPE_START_X,
-      REFRESH_SWIPE_START_Y,
-      REFRESH_SWIPE_END_X,
-      REFRESH_SWIPE_END_Y,
-      REFRESH_SWIPE_DURATION_MS,
-      { serial }
-    )
-    await sleep(RELOAD_WAIT_MS)
-    await this.adb.screencap(screenshotPath, { serial })
-    await this.adb.forceStopApp(packageName)
-    await this.adb.lock({ serial })
-
-    await OCRScreenshot.dispatch({})
+    await OCRScreenshot.dispatch({ screenshotName })
   }
 
   async failed(error: Error) {

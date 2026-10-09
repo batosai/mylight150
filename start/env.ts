@@ -27,4 +27,7 @@ export default await Env.create(new URL('../', import.meta.url), {
 
   ADB_APP_PACKAGE_NAME: Env.schema.string(),
   ADB_DEVICE: Env.schema.string(),
+
+  MYLIGHT_EMAIL: Env.schema.string.optional({ format: 'email' }),
+  MYLIGHT_PASSWORD: Env.schema.secret.optional(),
 })

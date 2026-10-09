@@ -90,7 +90,32 @@ export default class AdbService {
   }
 
   async lock(options: AdbTargetOptions = {}) {
-    await this.runKeyEventCommand(options, 'KEYCODE_POWER')
+    await this.runKeyEventCommand(options, 'KEYCODE_SLEEP')
+  }
+
+  async back(options: AdbTargetOptions = {}) {
+    await this.runKeyEventCommand(options, 'KEYCODE_BACK')
+  }
+
+  async dumpUi(options: AdbTargetOptions = {}) {
+    await this.runShellCommand(options, ['uiautomator', 'dump', '/sdcard/window-mylight.xml'])
+    const { stdout } = await this.runShellCommand(options, ['cat', '/sdcard/window-mylight.xml'])
+    if (typeof stdout !== 'string') throw new Error('Expected Android UI XML')
+    return stdout
+  }
+
+  async inputText(value: string, options: AdbTargetOptions = {}) {
+    // Android input only supports ASCII reliably and interprets %s as a space.
+    if (!value || /[^\x21-\x7e]/.test(value) || value.includes('%s')) {
+      throw new Error('Unsupported credential format for Android input')
+    }
+    const quoted = "'" + value.replaceAll("'", "'\\''") + "'"
+    try {
+      await this.runShellCommand(options, [`input text ${quoted}`])
+    } catch {
+      // Execa errors include command arguments: never expose credentials.
+      throw new Error('Android credential input failed')
+    }
   }
 
   async launchApp(packageName: string, options: AdbLaunchAppOptions = {}) {
@@ -125,7 +150,7 @@ export default class AdbService {
     args: readonly string[],
     options?: AdbCommandOptions
   ): Promise<{ stdout: string | Uint8Array }> {
-    return execa(command, args, options)
+    return execa(command, args, { timeout: 15000, ...options })
   }
 
   protected persistFile(destinationPath: string, data: Uint8Array) {
