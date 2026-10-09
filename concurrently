@@ -1,0 +1,6 @@
+# Development processes started by ./bin/dev
+# One command per line. Optional format: "name: command"
+# Blank lines and lines starting with # are ignored.
+
+server: node ace serve --hmr
+queue: node ace queue:work --queue=default,emails
