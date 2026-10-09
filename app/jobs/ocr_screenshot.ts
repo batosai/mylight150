@@ -23,8 +23,8 @@ export default class OcrScreenshot extends Job<OcrScreenshotPayload> {
     await sharp(screenshotPath)
       .grayscale()
       .normalize()
-      .threshold(150)
-      .extract({ left: 800, top: 1495, width: 160, height: 45 })
+      .threshold(180)
+      .extract({ left: 800, top: 1500, width: 160, height: 45 })
       .toFile(processedPath)
 
     const worker = await createWorker('fra')
