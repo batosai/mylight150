@@ -3,4 +3,4 @@
 # Blank lines and lines starting with # are ignored.
 
 server: node ace serve --hmr
-queue: node ace queue:work --queue=default,emails
+queue: node ace queue:work --all-queues --hmr
