@@ -52,7 +52,7 @@
   "dependencies": {
     "@adonisjs/core": "^7.6.0",
     "@adonisjs/queue": "^0.7.0",
-    "@adonisjs/redis": "^10.0.2",
+    "@adonisjs/redis": "^11.0.0",
     "execa": "^10.2.0",
     "pino-roll": "^4.0.0",
     "reflect-metadata": "^0.2.2"
